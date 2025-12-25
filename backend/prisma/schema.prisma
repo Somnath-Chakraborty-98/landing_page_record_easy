@@ -1,0 +1,96 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          Int      @id @default(autoincrement())
+  email       String   @unique
+  created_at  DateTime @default(now())
+
+  waitlists      WaitlistEntry[]
+  user_info      UserInfo?
+  user_events    UserEvent[]
+  early_supports EarlySupport[]
+
+  @@map("users")
+}
+
+model Product {
+  id           Int      @id @default(autoincrement())
+  product_key  String   @unique
+  product_name String
+  created_at   DateTime @default(now())
+
+  waitlists    WaitlistEntry[]
+  user_events  UserEvent[]
+  early_supports  EarlySupport[]
+
+  @@map("products")
+}
+
+model WaitlistEntry {
+  id           Int      @id @default(autoincrement())
+
+  user_id      Int
+  product_id   Int
+
+  joined_at    DateTime @default(now())
+  is_verified  Boolean  @default(false)
+  verified_at  DateTime?
+
+  user         User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  product      Product  @relation(fields: [product_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, product_id])
+  @@map("waitlist_entries")
+}
+
+model UserInfo {
+  id             Int      @id @default(autoincrement())
+  user_id        Int      @unique
+  first_login_at DateTime?
+  country        String?
+
+  user           User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("user_info")
+}
+
+model UserEvent {
+  id           Int      @id @default(autoincrement())
+
+  user_id      Int
+  product_id   Int?
+
+  event_type   String
+  created_at   DateTime @default(now())
+
+  user         User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  product      Product? @relation(fields: [product_id], references: [id], onDelete: SetNull)
+
+  @@index([event_type])
+  @@map("user_events")
+}
+
+model EarlySupport {
+  id            Int      @id @default(autoincrement())
+
+  user_id       Int
+  product_id    Int
+
+  amount_in_inr Int
+  message       String?
+  supported_at  DateTime @default(now())
+
+  user          User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  product       Product? @relation(fields: [product_id], references: [id], onDelete: SetNull)
+
+  @@index([product_id])
+  @@map("early_support")
+}
+

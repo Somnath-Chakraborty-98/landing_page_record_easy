@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RecordEasy – Transparent Meeting Recorder</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+
+<header class="navbar">
+  <div class="logo">RecordEasy</div>
+</header>
+
+<section class="hero">
+  <div class="hero-content">
+    <div class="hero-text">
+      <h1>The Hassle-Free Meeting Recorder</h1>
+      <p class="hero-desc">
+        No awkward bots. Smart reminders. One click to record. Saved locally.
+      </p>
+      <p class="hero-muted">
+        Clear limits. Predictable pricing. Privacy-first.
+      </p>
+      <div class="actions">
+        <a href="#" class="btn primary" id="joinWaitlistBtn">Join Waitlist</a>
+        <a href="#" class="btn secondary" id="chromeExtensionBtn">Chrome Extension</a>
+      </div>
+      <p id="heroMessage" class="hero-message"></p>
+    </div>
+
+    <div class="hero-image">
+        <img 
+          src="assets/hero-illustration.jpeg" 
+          alt="Meeting recording without bots, saved locally"
+        />
+      </div>
+  </div>
+</section>
+
+<section class="difference">
+  <h2>Why RecordEasy Is Different</h2>
+
+  <table class="compare-table">
+    <thead>
+      <tr>
+        <th></th>
+        <th>Old Way</th>
+        <th>Our Way</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      <tr>
+        <td class="label">Bots in Call</td>
+        <td>
+          <div class="cell old">
+            <span class="icon red">✖</span> Yes
+          </div>
+        </td>
+        <td>
+          <div class="cell new">
+            <span class="icon green">✔</span> No
+          </div>
+        </td>
+      </tr>
+
+      <tr>
+        <td class="label">Unlimited AI</td>
+        <td>
+          <div class="cell old">
+            <span class="icon amber">⚠</span> Gimmicks
+          </div>
+        </td>
+        <td>
+          <div class="cell new">
+            <span class="icon green">✔</span> Clear Limits
+          </div>
+        </td>
+      </tr>
+
+      <tr>
+        <td class="label">Data Privacy</td>
+        <td>
+          <div class="cell old">
+            <span class="icon red">✖</span> Cloud Risk
+          </div>
+        </td>
+        <td>
+          <div class="cell new">
+            <span class="icon green">✔</span> Local & Secure
+          </div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<section class="coming-soon">
+  <div class="coming-soon-inner">
+    <h2>What’s Available Today & What’s Coming</h2>
+    <p class="coming-sub">
+      RecordEasy is being built transparently. Here’s the honest status.
+    </p>
+
+    <div class="status-grid">
+      <div class="status-card available">
+        <h3>Available Now</h3>
+        <ul>
+          <li>✔ One-click screen recording</li>
+          <li>✔ Explicit user permission before recording</li>
+          <li>✔ Local-only video saving</li>
+          <li>✔ No bots joining meetings</li>
+        </ul>
+      </div>
+
+      <div class="status-card coming">
+        <h3>Coming Soon</h3>
+        <ul>
+          <li>⏳ AI transcription</li>
+          <li>⏳ Smart summaries</li>
+          <li>⏳ and much more</li>
+        </ul>
+      </div>
+    </div>
+
+    <p class="coming-note">
+      We ship features only when they meet our standards for accuracy,
+      privacy, and predictable limits.
+    </p>
+  </div>
+</section>
+
+
+<section class="faq-section">
+  <div class="faq-inner">
+    <h2>Straight Answers</h2>
+
+    <div class="faq-grid">
+      <div class="faq-card">
+        <h3>Unlimited transcription?</h3>
+        <p>
+          We avoid unlimited claims. Clear limits ensure consistent quality and
+          predictable pricing.
+        </p>
+      </div>
+
+      <div class="faq-card">
+        <h3>Why cheaper?</h3>
+        <p>
+          We focus on core value — recording + AI — without enterprise bloat.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="waitlist-section full-width" id="waitlist">
+  <div class="waitlist-inner">
+    <h2>Join the Waitlist</h2>
+
+    <p class="waitlist-sub">
+      Be the first to access transparent recording with AI — no bots, no tricks.
+    </p>
+
+    <form class="waitlist-form" id="waitlistForm">
+      <input
+        type="email"
+        id="emailInput"
+        placeholder="Email address"
+        required
+      />
+      <button type="submit">Join Waitlist</button>
+      <p id="formMessage" class="form-message"></p>
+    </form>
+
+  </div>
+</section>
+
+
+<script src="js/main.js" defer></script>
+
+</body>
+</html>
