@@ -43,24 +43,35 @@ document.addEventListener("DOMContentLoaded", () => {
                     body: JSON.stringify({ email })
                 });
 
-                const data = await res.json();
+                let data = {};
+                const text = await res.text();
+
+                try {
+                    data = text ? JSON.parse(text) : {};
+                } catch {
+                    data = {};
+                }
 
                 if (!res.ok) {
                     throw new Error(data.error || "Something went wrong");
                 }
 
-                if (data.verified) {
-                    messageEl.textContent = "You are already verified.";
-                } else {
-                    messageEl.textContent =
-                        "Check your email to verify your address.";
-                }
+                messageEl.textContent =
+                    data.message || "Check your email to verify your address.";
 
                 messageEl.style.color = "green";
                 emailInput.value = "";
             } catch (err) {
-                messageEl.textContent = err.message;
-                messageEl.style.color = "red";
+                if (err.message && err.message !== "Something went wrong") {
+                    messageEl.textContent = err.message;
+                    messageEl.style.color = "red";
+                    return;
+                }
+
+                // Otherwise, redirect to the error page
+                return res.status(500).sendFile(
+                    path.join(__dirname, "../frontend/error.html")
+                );
             }
         });
     }

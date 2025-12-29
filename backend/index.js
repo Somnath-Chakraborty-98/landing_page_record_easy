@@ -3,23 +3,32 @@ import cors from "cors";
 import dotenv from "dotenv";
 import nodemailer from "nodemailer";
 import crypto from "crypto";
+import path from "path";
+import { fileURLToPath } from "url";
 import { PrismaClient } from "@prisma/client";
-
-import loadUser from "./middleware/loadUser.js";
-import requireVerifiedUser from "./middleware/requireVerifiedUser.js";
 
 dotenv.config();
 
+/* --------------------------------------------------
+   App & Prisma
+-------------------------------------------------- */
 const app = express();
 const prisma = new PrismaClient();
+
+/* --------------------------------------------------
+   Resolve __dirname (ESM safe)
+-------------------------------------------------- */
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 /* --------------------------------------------------
    Global Middleware
 -------------------------------------------------- */
 app.use(cors());
 app.use(express.json());
-app.use(express.static("../frontend"));
-app.use(loadUser);
+
+// ✅ ALWAYS use absolute path for static files
+app.use(express.static(path.join(__dirname, "../frontend")));
 
 /* --------------------------------------------------
    Mail Transporter (Zoho SMTP)
@@ -52,7 +61,7 @@ function generateEmailToken() {
 }
 
 /* --------------------------------------------------
-   PUBLIC: Signup / Waitlist
+   PUBLIC: Join Waitlist (Email Only)
 -------------------------------------------------- */
 app.post("/api/waitlist", async (req, res) => {
   try {
@@ -68,9 +77,9 @@ app.post("/api/waitlist", async (req, res) => {
       create: { email }
     });
 
-    // 🔒 IMPORTANT: Block verified users
+    // Already verified → no email needed
     if (user.is_verified) {
-      return res.status(200).json({
+      return res.json({
         success: true,
         message: "Email already verified"
       });
@@ -105,86 +114,24 @@ app.post("/api/waitlist", async (req, res) => {
       message: "Verification email sent"
     });
   } catch (err) {
-    console.error(err);
-    return res.status(500).json({ error: "Internal error" });
+    console.error("Waitlist error:", err);
+    return res.status(500).json({
+      error: "Something went wrong. Please try again later."
+    });
   }
 });
 
 /* --------------------------------------------------
-   PUBLIC: Resend Verification Email
--------------------------------------------------- */
-app.post("/api/resend-verification", async (req, res) => {
-  try {
-    const { email } = req.body;
-
-    if (!email) {
-      return res.status(400).json({ error: "Email required" });
-    }
-
-    const user = await prisma.user.findUnique({ where: { email } });
-
-    if (!user) {
-      return res.status(400).json({ error: "User not found" });
-    }
-
-    if (user.is_verified) {
-      return res.status(400).json({ error: "Email already verified" });
-    }
-
-    const existing = await prisma.emailVerification.findUnique({
-      where: { user_id: user.id }
-    });
-
-    if (existing) {
-      const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
-      if (existing.created_at > fiveMinutesAgo) {
-        return res.status(429).json({
-          error: "Please wait before requesting another email"
-        });
-      }
-    }
-
-    const { rawToken, tokenHash } = generateEmailToken();
-
-    await prisma.emailVerification.upsert({
-      where: { user_id: user.id },
-      update: {
-        token_hash: tokenHash,
-        expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000),
-        created_at: new Date()
-      },
-      create: {
-        user_id: user.id,
-        token_hash: tokenHash,
-        expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000)
-      }
-    });
-
-    const link = `${process.env.BASE_URL}/verify-email?token=${rawToken}`;
-
-    await transporter.sendMail({
-      from: fromAddress(),
-      to: email,
-      subject: "Verify your email for RecordEasy",
-      text: `Click the link to verify your email:\n\n${link}`
-    });
-
-    return res.json({ success: true });
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ error: "Internal error" });
-  }
-});
-
-/* --------------------------------------------------
-   PUBLIC: Verify Email
+   PUBLIC: Verify Email → Add to Waitlist
 -------------------------------------------------- */
 app.get("/verify-email", async (req, res) => {
   try {
     const { token } = req.query;
+    if (!token) {
+      return res.status(400).sendFile(
+        path.join(__dirname, "../frontend/error.html")
+      );
 
-    if (!token || typeof token !== "string") {
-      return res.status(400).send("Invalid link");
     }
 
     const tokenHash = crypto
@@ -200,45 +147,51 @@ app.get("/verify-email", async (req, res) => {
     });
 
     if (!record) {
-      return res.status(400).send("Link expired or invalid");
+      return res.status(400).sendFile(
+        path.join(__dirname, "../frontend/error.html")
+      );
+
     }
 
-    await prisma.$transaction([
-      prisma.user.update({
+    const PRODUCT_ID = 1; // must exist in products table
+
+    await prisma.$transaction(async (tx) => {
+      await tx.user.update({
         where: { id: record.user_id },
         data: {
           is_verified: true,
           verified_at: new Date()
         }
-      }),
-      prisma.emailVerification.delete({
+      });
+
+      await tx.waitlistEntry.upsert({
+        where: {
+          user_id_product_id: {
+            user_id: record.user_id,
+            product_id: PRODUCT_ID
+          }
+        },
+        update: {},
+        create: {
+          user_id: record.user_id,
+          product_id: PRODUCT_ID
+        }
+      });
+
+      await tx.emailVerification.delete({
         where: { id: record.id }
-      })
-    ]);
+      });
+    });
 
     return res.redirect("/verified.html");
   } catch (err) {
-    console.error(err);
-    return res.status(500).send("Internal error");
+    console.error("Verify email failed:", err);
+    return res.status(400).sendFile(
+      path.join(__dirname, "../frontend/error.html")
+    );
+
   }
 });
-
-/* --------------------------------------------------
-   PROTECTED: Verified Users Only
--------------------------------------------------- */
-app.get(
-  "/api/protected",
-  requireVerifiedUser,
-  (req, res) => {
-    return res.json({
-      message: "Access granted. User is verified.",
-      user: {
-        id: req.user.id,
-        email: req.user.email
-      }
-    });
-  }
-);
 
 /* --------------------------------------------------
    Server

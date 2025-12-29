@@ -1,0 +1,63 @@
+/* Base reset */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont,
+               "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background-color: #f9fafb;
+  color: #111827;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+}
+
+/* Card container */
+.card {
+  background: #ffffff;
+  max-width: 420px;
+  width: 100%;
+  padding: 32px;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.06);
+  text-align: center;
+}
+
+/* Icon */
+.icon {
+  font-size: 44px;
+  margin-bottom: 16px;
+}
+
+/* Heading */
+h1 {
+  font-size: 22px;
+  margin: 0 0 8px;
+  font-weight: 600;
+}
+
+/* Text */
+.primary {
+  font-size: 15px;
+  line-height: 1.5;
+  color: #4b5563;
+  margin: 0 0 20px;
+}
+
+.note {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.note a {
+  color: #2563eb;
+  text-decoration: none;
+}
+
+.note a:hover {
+  text-decoration: underline;
+}
