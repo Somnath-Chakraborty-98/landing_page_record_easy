@@ -265,8 +265,9 @@ a {
 
 .waitlist-form {
   display: flex;
-  gap: 14px;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 12px;
+  align-items: stretch;
 }
 
 .waitlist-form input {
@@ -295,6 +296,13 @@ a {
 
 .waitlist-form button:hover {
   background: #4338ca;
+}
+
+.form-message {
+  min-height: 1.2em;      /* reserves space even when empty */
+  font-size: 0.9rem;
+  line-height: 1.2;
+  margin: 0;
 }
 
 /* =========================================================

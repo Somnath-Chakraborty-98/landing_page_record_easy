@@ -35,7 +35,7 @@ document.addEventListener("DOMContentLoaded", () => {
             messageEl.style.color = "#666";
 
             try {
-                const res = await fetch("/api/waitlist", {
+                const res = await fetch("http://localhost:4000/api/waitlist", {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json"
@@ -46,32 +46,29 @@ document.addEventListener("DOMContentLoaded", () => {
                 let data = {};
                 const text = await res.text();
 
-                try {
-                    data = text ? JSON.parse(text) : {};
-                } catch {
-                    data = {};
+                if (text) {
+                    try {
+                        data = JSON.parse(text);
+                    } catch {
+                        throw new Error("Invalid server response");
+                    }
                 }
 
-                if (!res.ok) {
-                    throw new Error(data.error || "Something went wrong");
-                }
+                if (!res.ok)
+                    throw new Error(data.error || "Request failed");
 
                 messageEl.textContent =
                     data.message || "Check your email to verify your address.";
 
                 messageEl.style.color = "green";
                 emailInput.value = "";
-            } catch (err) {
-                if (err.message && err.message !== "Something went wrong") {
-                    messageEl.textContent = err.message;
-                    messageEl.style.color = "red";
-                    return;
-                }
 
-                // Otherwise, redirect to the error page
-                return res.status(500).sendFile(
-                    path.join(__dirname, "../frontend/error.html")
-                );
+            } catch (err) {
+                console.error("Waitlist request failed:", err);
+
+                messageEl.textContent =
+                    err.message || "Unable to send verification email. Please try again later.";
+                messageEl.style.color = "red";
             }
         });
     }
