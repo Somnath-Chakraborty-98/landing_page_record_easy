@@ -23,7 +23,7 @@
         Clear limits. Predictable pricing. Privacy-first.
       </p>
       <div class="actions">
-        <a href="#" class="btn primary" id="joinWaitlistBtn">Join Waitlist</a>
+        <a href="#" class="btn primary" id="heroJoinWaitlistBtn">Join Waitlist</a>
         <a href="#" class="btn secondary" id="chromeExtensionBtn">Chrome Extension</a>
       </div>
       <p id="heroMessage" class="hero-message"></p>
@@ -164,16 +164,38 @@
     </p>
 
     <form class="waitlist-form" id="waitlistForm">
-      <input
-        type="email"
-        id="emailInput"
-        placeholder="Email address"
-        required
-      />
-      <button type="submit">Join Waitlist</button>
+      <!-- message ABOVE input -->
       <p id="formMessage" class="form-message"></p>
-    </form>
 
+      <!-- input + button row -->
+      <div class="waitlist-row">
+        <input
+          type="email"
+          id="emailInput"
+          placeholder="Email address"
+          required
+        />
+        <button type="submit" class="btn primary btn-sm" id="joinWaitlistBtn">Join Waitlist</button>
+
+      </div>
+    </form>
+  </div>
+</section>
+
+<section class="support-section">
+  <div class="support-inner">
+    <p class="support-text">
+      Like what we’re building? Support the project.
+    </p>
+
+    <a
+      href="https://buymeacoffee.com/yourname"
+      target="_blank"
+      rel="noopener noreferrer"
+      class="btn secondary"
+    >
+      ☕ Buy Me a Coffee
+    </a>
   </div>
 </section>
 

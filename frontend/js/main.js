@@ -78,7 +78,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // ====================================================
 
     // Smooth scroll to waitlist + focus email input
-    const joinBtn = document.getElementById("joinWaitlistBtn");
+    const joinBtn = document.getElementById("heroJoinWaitlistBtn");
     const waitlistSection = document.getElementById("waitlist");
 
     if (joinBtn && waitlistSection && emailInput) {

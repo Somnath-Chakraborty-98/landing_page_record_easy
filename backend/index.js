@@ -6,6 +6,7 @@ import crypto from "crypto";
 import path from "path";
 import { fileURLToPath } from "url";
 import { PrismaClient } from "@prisma/client";
+import rateLimit from "express-rate-limit";
 
 dotenv.config();
 
@@ -14,6 +15,9 @@ dotenv.config();
 -------------------------------------------------- */
 const app = express();
 const prisma = new PrismaClient();
+
+// ✅ REQUIRED if behind proxy (Cloudflare, Render, Vercel, Nginx)
+app.set("trust proxy", 1);
 
 /* --------------------------------------------------
    Resolve __dirname (ESM safe)
@@ -25,6 +29,14 @@ const __dirname = path.dirname(__filename);
    Global Middleware
 -------------------------------------------------- */
 app.use(cors());
+
+/*
+app.use(cors({
+  origin: ["https://recordeasy.com"],
+  methods: ["GET", "POST"]
+}));
+
+*/
 app.use(express.json());
 
 // ✅ ALWAYS use absolute path for static files
@@ -63,7 +75,17 @@ function generateEmailToken() {
 /* --------------------------------------------------
    PUBLIC: Join Waitlist (Email Only)
 -------------------------------------------------- */
-app.post("/api/waitlist", async (req, res) => {
+const waitlistLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 3,                  // 3 requests per IP per window
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    error: "Too many attempts. Please try again after 15 minutes."
+  }
+});
+
+app.post("/api/waitlist", waitlistLimiter, async (req, res) => {
   try {
     const { email } = req.body;
 
@@ -155,12 +177,32 @@ app.get("/verify-email", async (req, res) => {
 
     const PRODUCT_ID = 1; // must exist in products table
 
+    const countryCode =
+      req.headers["cf-ipcountry"] &&
+        req.headers["cf-ipcountry"] !== "XX"
+        ? req.headers["cf-ipcountry"]
+        : null;
+
+
     await prisma.$transaction(async (tx) => {
+
       await tx.user.update({
         where: { id: record.user_id },
         data: {
           is_verified: true,
           verified_at: new Date()
+        }
+      });
+
+      await tx.userInfo.upsert({
+        where: { user_id: record.user_id },
+        update: {
+          country: countryCode ?? undefined
+        },
+        create: {
+          user_id: record.user_id,
+          first_login_at: new Date(),
+          country: countryCode
         }
       });
 
