@@ -1,4 +1,49 @@
 document.addEventListener("DOMContentLoaded", () => {
+    const API_BASE_URL = (() => {
+        if (window.RECORDEASY_API_BASE_URL) {
+            return window.RECORDEASY_API_BASE_URL.replace(/\/$/, "");
+        }
+
+        const isLocalHost = ["localhost", "127.0.0.1"].includes(window.location.hostname);
+
+        if (window.location.protocol === "file:" || (isLocalHost && window.location.port !== "4000")) {
+            return "http://localhost:4000";
+        }
+
+        return "";
+    })();
+
+    function apiUrl(path) {
+        return `${API_BASE_URL}${path}`;
+    }
+
+    async function parseJsonResponse(res, fallbackErrorMessage) {
+        const text = await res.text();
+        let data = {};
+
+        if (text) {
+            try {
+                data = JSON.parse(text);
+            } catch {
+                throw new Error("Invalid server response. Please try again later.");
+            }
+        }
+
+        if (!res.ok) {
+            throw new Error(data.error || fallbackErrorMessage);
+        }
+
+        return data;
+    }
+
+    function getConnectionErrorMessage(context) {
+        const localHint = API_BASE_URL.includes("localhost")
+            ? " Make sure the backend is running on port 4000."
+            : "";
+
+        return `Could not reach the ${context} server. Please try again later.${localHint}`;
+    }
+
     // ====================================================
     // WAITLIST FORM LOGIC
     // ====================================================
@@ -35,7 +80,7 @@ document.addEventListener("DOMContentLoaded", () => {
             messageEl.style.color = "#666";
 
             try {
-                const res = await fetch("http://localhost:4000/api/waitlist", {
+                const res = await fetch(apiUrl("/api/waitlist"), {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json"
@@ -43,19 +88,10 @@ document.addEventListener("DOMContentLoaded", () => {
                     body: JSON.stringify({ email })
                 });
 
-                let data = {};
-                const text = await res.text();
-
-                if (text) {
-                    try {
-                        data = JSON.parse(text);
-                    } catch {
-                        throw new Error("Invalid server response");
-                    }
-                }
-
-                if (!res.ok)
-                    throw new Error(data.error || "Request failed");
+                const data = await parseJsonResponse(
+                    res,
+                    "Unable to send verification email. Please try again later."
+                );
 
                 messageEl.textContent =
                     data.message || "Check your email to verify your address.";
@@ -67,7 +103,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 console.error("Waitlist request failed:", err);
 
                 messageEl.textContent =
-                    err.message || "Unable to send verification email. Please try again later.";
+                    err instanceof TypeError
+                        ? getConnectionErrorMessage("waitlist")
+                        : err.message || "Unable to send verification email. Please try again later.";
                 messageEl.style.color = "red";
             }
         });
@@ -112,6 +150,95 @@ document.addEventListener("DOMContentLoaded", () => {
             setTimeout(() => {
                 heroMessage.textContent = "";
             }, 4000);
+        });
+    }
+
+    // ====================================================
+    // RAZORPAY DONATION CHECKOUT
+    // ====================================================
+
+    const donateBtn = document.getElementById("donateBtn");
+    const donationMessage = document.getElementById("donationMessage");
+    let selectedDonationAmount = 99;
+
+    function setDonationMessage(message, color = "#666") {
+        if (!donationMessage) return;
+
+        donationMessage.textContent = message;
+        donationMessage.style.color = color;
+    }
+
+    async function verifyDonationPayment(response) {
+        const res = await fetch(apiUrl("/api/donations/verify"), {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(response)
+        });
+
+        return parseJsonResponse(res, "Payment verification failed.");
+    }
+
+    if (donateBtn) {
+        donateBtn.addEventListener("click", async () => {
+            if (!window.Razorpay) {
+                setDonationMessage("Razorpay checkout could not load. Please try again.", "red");
+                return;
+            }
+
+            donateBtn.disabled = true;
+            setDonationMessage("Opening Razorpay checkout...");
+
+            try {
+                const res = await fetch(apiUrl("/api/donations/order"), {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ amount: selectedDonationAmount })
+                });
+
+                const order = await parseJsonResponse(res, "Unable to create payment order.");
+
+                const checkout = new window.Razorpay({
+                    key: order.keyId,
+                    amount: order.amount,
+                    currency: order.currency,
+                    name: order.name,
+                    description: order.description,
+                    order_id: order.orderId,
+                    handler: async (response) => {
+                        try {
+                            const result = await verifyDonationPayment(response);
+                            setDonationMessage(result.message || "Thank you for supporting RecordEasy.", "green");
+                        } catch (err) {
+                            console.error("Donation verification failed:", err);
+                            setDonationMessage(err.message || "Payment verification failed.", "red");
+                        }
+                    },
+                    theme: {
+                        color: "#4f46e5"
+                    },
+                    modal: {
+                        ondismiss: () => {
+                            setDonationMessage("Payment cancelled.");
+                        }
+                    }
+                });
+
+                checkout.open();
+            } catch (err) {
+                console.error("Donation checkout failed:", err);
+                setDonationMessage(
+                    err instanceof TypeError
+                        ? getConnectionErrorMessage("payment")
+                        : err.message || "Unable to open Razorpay checkout.",
+                    "red"
+                );
+            } finally {
+                donateBtn.disabled = false;
+            }
         });
     }
 });
