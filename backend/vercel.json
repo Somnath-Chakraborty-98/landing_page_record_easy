@@ -1,0 +1,21 @@
+{
+  "version": 2,
+  "buildCommand": "npm install",
+  "env": {
+    "NODE_ENV": "production"
+  },
+  "functions": {
+    "index.js": {
+      "runtime": "nodejs20.x",
+      "memory": 512,
+      "maxDuration": 30,
+      "includeFiles": "prisma/**"
+    }
+  },
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "index.js"
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "buildCommand": "npm run build",
+  "framework": null,
+  "functions": {
+    "backend/index.js": {
+      "runtime": "nodejs20.x",
+      "memory": 512,
+      "maxDuration": 30
+    }
+  }
+}
