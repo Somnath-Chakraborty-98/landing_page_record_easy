@@ -1,12 +1,19 @@
 {
   "version": 2,
-  "buildCommand": "npm run build",
+  "buildCommand": "cd backend && npm install && npx prisma generate",
   "framework": null,
   "functions": {
     "backend/index.js": {
       "runtime": "nodejs20.x",
       "memory": 512,
-      "maxDuration": 30
+      "maxDuration": 30,
+      "includeFiles": "{backend/prisma/**,frontend/**}"
     }
-  }
+  },
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "backend/index.js"
+    }
+  ]
 }

@@ -471,6 +471,10 @@ app.get("/verify-email", async (req, res) => {
 -------------------------------------------------- */
 const PORT = process.env.PORT || 4000;
 
-app.listen(PORT, () => {
-  console.log(`Backend running on port ${PORT}`);
-});
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`Backend running on port ${PORT}`);
+  });
+}
+
+export default app;
