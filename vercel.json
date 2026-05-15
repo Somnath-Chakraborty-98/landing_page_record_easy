@@ -3,17 +3,25 @@
   "buildCommand": "cd backend && npm install && npx prisma generate",
   "framework": null,
   "functions": {
-    "backend/index.js": {
+    "api/index.js": {
       "runtime": "nodejs20.x",
       "memory": 512,
       "maxDuration": 30,
       "includeFiles": "{backend/prisma/**,frontend/**}"
     }
   },
-  "routes": [
+  "rewrites": [
     {
-      "src": "/(.*)",
-      "dest": "backend/index.js"
+      "source": "/api/(.*)",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/verify-email",
+      "destination": "/api/index.js"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/api/index.js"
     }
   ]
 }
