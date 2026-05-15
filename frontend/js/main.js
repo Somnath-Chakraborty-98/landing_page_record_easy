@@ -18,6 +18,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     async function parseJsonResponse(res, fallbackErrorMessage) {
+        const contentType = res.headers.get("content-type") || "";
         const text = await res.text();
         let data = {};
 
@@ -25,7 +26,13 @@ document.addEventListener("DOMContentLoaded", () => {
             try {
                 data = JSON.parse(text);
             } catch {
-                throw new Error("Invalid server response. Please try again later.");
+                const responseType = contentType.includes("text/html")
+                    ? "HTML"
+                    : contentType || "non-JSON";
+
+                throw new Error(
+                    `Invalid server response from ${res.url} (${res.status} ${responseType}). Please check the API deployment URL.`
+                );
             }
         }
 

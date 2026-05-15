@@ -43,6 +43,24 @@ app.use(express.json());
 // ✅ ALWAYS use absolute path for static files
 app.use(express.static(path.join(__dirname, "../frontend")));
 
+app.get("/api/health", async (req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+
+    return res.json({
+      success: true,
+      database: "connected"
+    });
+  } catch (err) {
+    console.error("Health check failed:", err);
+
+    return res.status(500).json({
+      success: false,
+      error: "Database connection failed"
+    });
+  }
+});
+
 /* --------------------------------------------------
    Mail Transporter (Zoho SMTP)
 -------------------------------------------------- */
