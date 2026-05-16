@@ -1,0 +1,7 @@
+{
+  "name": "recordeasy",
+  "private": true,
+  "scripts": {
+    "build": "cd backend && npm install && npx prisma generate"
+  }
+}
