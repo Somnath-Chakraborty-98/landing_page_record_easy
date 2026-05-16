@@ -1,7 +1,7 @@
 {
-  "name": "recordeasy",
+  "name": "recordeasy-root",
   "private": true,
   "scripts": {
-    "build": "cd backend && npm install && npm exec prisma generate"
+    "build": "cd backend && npm install && node ./node_modules/prisma/build/index.js generate"
   }
 }
