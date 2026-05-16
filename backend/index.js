@@ -6,8 +6,8 @@ import crypto from "crypto";
 import https from "https";
 import path from "path";
 import { fileURLToPath } from "url";
-import { PrismaClient } from "@prisma/client";
 import rateLimit from "express-rate-limit";
+import prisma from "./lib/prisma.js";
 
 dotenv.config();
 
@@ -15,7 +15,6 @@ dotenv.config();
    App & Prisma
 -------------------------------------------------- */
 const app = express();
-const prisma = new PrismaClient();
 
 // ✅ REQUIRED if behind proxy (Cloudflare, Render, Vercel, Nginx)
 app.set("trust proxy", 1);

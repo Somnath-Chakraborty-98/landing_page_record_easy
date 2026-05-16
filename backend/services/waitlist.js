@@ -1,11 +1,10 @@
-const { PrismaClient } = require("@prisma/client");
-const crypto = require("crypto");
-const { hashToken } = require("../utils/crypto");
+import crypto from "crypto";
+import prisma from "../lib/prisma.js";
+import { hashToken } from "../utils/crypto.js";
 
-const prisma = new PrismaClient();
-const PRODUCT_ID = 1; // change later if needed
+const PRODUCT_ID = 1;
 
-async function requestWaitlist(email) {
+export async function requestWaitlist(email) {
   const user = await prisma.user.upsert({
     where: { email },
     update: {},
@@ -30,7 +29,7 @@ async function requestWaitlist(email) {
   return token;
 }
 
-async function verifyWaitlist(token) {
+export async function verifyWaitlist(token) {
   const tokenHash = hashToken(token);
 
   await prisma.$transaction(async (tx) => {
@@ -41,7 +40,9 @@ async function verifyWaitlist(token) {
       }
     });
 
-    if (!record) throw new Error("INVALID_TOKEN");
+    if (!record) {
+      throw new Error("INVALID_TOKEN");
+    }
 
     await tx.user.update({
       where: { id: record.user_id },
@@ -70,8 +71,3 @@ async function verifyWaitlist(token) {
     });
   });
 }
-
-module.exports = {
-  requestWaitlist,
-  verifyWaitlist
-};
