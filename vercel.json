@@ -1,29 +1,4 @@
 {
   "version": 2,
-  "buildCommand": "cd backend && npm install && npx prisma generate",
-  "framework": null,
-  "functions": {
-    "api/index.js": {
-      "runtime": "nodejs20.x",
-      "memory": 512,
-      "maxDuration": 30,
-      "includeFiles": "{backend/prisma/**,frontend/**}"
-    },
-    "api/[...path].js": {
-      "runtime": "nodejs20.x",
-      "memory": 512,
-      "maxDuration": 30,
-      "includeFiles": "{backend/prisma/**,frontend/**}"
-    }
-  },
-  "rewrites": [
-    {
-      "source": "/verify-email",
-      "destination": "/api"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/api"
-    }
-  ]
+  "framework": null
 }
