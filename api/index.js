@@ -1,6 +1,4 @@
-import app from '../backend/index.js';
 
-export default app;
 module.exports = async (req, res) => {
   if (req.url === "/api/health" || req.url === "/health" || req.url === "/") {
     res.setHeader("content-type", "application/json");
@@ -10,6 +8,7 @@ module.exports = async (req, res) => {
     }));
   }
 
+  // Lazy-load the backend app so errors show up clearly
   const { default: app } = await import("../backend/index.js");
   return app(req, res);
 };
