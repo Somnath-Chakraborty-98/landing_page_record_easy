@@ -1,5 +1,6 @@
 {
   "name": "recordeasy-root",
+  "type": "module",
   "private": true,
   "scripts": {
     "build": "cd backend && npm install && node ./node_modules/prisma/build/index.js generate"
