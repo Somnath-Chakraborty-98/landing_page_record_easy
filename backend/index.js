@@ -60,6 +60,209 @@ app.get("/api/health", async (req, res) => {
   }
 });
 
+function hasEnv(name) {
+  return Boolean(process.env[name]?.trim());
+}
+
+function getDatabaseEnvStatus() {
+  const source = hasEnv("DATABASE_URL")
+    ? "DATABASE_URL"
+    : hasEnv("DIRECT_URL")
+      ? "DIRECT_URL"
+      : null;
+  const value = source ? process.env[source] : "";
+
+  let host = null;
+  let providerHint = "unknown";
+
+  try {
+    if (value) {
+      const parsed = new URL(value);
+      host = parsed.hostname;
+      providerHint = parsed.hostname.includes("supabase")
+        ? "supabase"
+        : "postgres";
+    }
+  } catch {
+    providerHint = "invalid-url";
+  }
+
+  return {
+    configured: Boolean(source),
+    source,
+    host,
+    providerHint
+  };
+}
+
+function getRuntimeDiagnostics(req) {
+  return {
+    ok: true,
+    service: "recordeasy-api",
+    timestamp: new Date().toISOString(),
+    runtime: {
+      node: process.version,
+      platform: process.platform,
+      environment: process.env.NODE_ENV || null,
+      vercel: {
+        detected: Boolean(process.env.VERCEL),
+        environment: process.env.VERCEL_ENV || null,
+        region: process.env.VERCEL_REGION || process.env.VERCEL_DEPLOYMENT_REGION || null,
+        urlConfigured: hasEnv("VERCEL_URL")
+      }
+    },
+    request: {
+      method: req.method,
+      path: req.originalUrl,
+      host: req.get("host") || null,
+      protocol: req.protocol,
+      forwardedProto: req.get("x-forwarded-proto") || null
+    },
+    env: {
+      database: getDatabaseEnvStatus(),
+      baseUrlConfigured: hasEnv("BASE_URL"),
+      smtpConfigured: ["SMTP_HOST", "SMTP_USER", "SMTP_PASS", "SMTP_FROM_EMAIL"].every(hasEnv),
+      razorpayConfigured: ["RAZORPAY_KEY_ID", "RAZORPAY_KEY_SECRET"].every(hasEnv)
+    }
+  };
+}
+
+function formatDbError(err) {
+  return {
+    name: err?.name || "Error",
+    code: err?.code || err?.cause?.code || null,
+    message: err?.message || "Database check failed"
+  };
+}
+
+async function runDatabaseDiagnostics() {
+  const startedAt = Date.now();
+  const databaseEnv = getDatabaseEnvStatus();
+
+  if (!databaseEnv.configured) {
+    return {
+      ok: false,
+      area: "deployment",
+      database: databaseEnv,
+      latencyMs: Date.now() - startedAt,
+      checks: {
+        env: "missing",
+        connection: "skipped",
+        schema: "skipped"
+      },
+      error: {
+        message: "DATABASE_URL or DIRECT_URL is not configured in the runtime environment"
+      }
+    };
+  }
+
+  try {
+    const ping = await prisma.$queryRaw`
+      SELECT
+        1 AS ok,
+        current_database() AS database_name,
+        current_schema() AS schema_name,
+        version() AS postgres_version
+    `;
+
+    const expectedTables = [
+      "users",
+      "products",
+      "waitlist_entries",
+      "user_info",
+      "email_verifications"
+    ];
+    const tables = await prisma.$queryRaw`
+      SELECT table_name
+      FROM information_schema.tables
+      WHERE table_schema = 'public'
+        AND table_name IN ('users', 'products', 'waitlist_entries', 'user_info', 'email_verifications')
+      ORDER BY table_name
+    `;
+    const existingTables = tables.map((row) => row.table_name);
+    const missingTables = expectedTables.filter((table) => !existingTables.includes(table));
+
+    let productOne = null;
+    if (!missingTables.includes("products")) {
+      productOne = await prisma.product.findUnique({
+        where: { id: 1 },
+        select: {
+          id: true,
+          product_key: true,
+          product_name: true
+        }
+      });
+    }
+
+    const schemaOk = missingTables.length === 0;
+
+    return {
+      ok: schemaOk,
+      area: schemaOk ? "healthy" : "database",
+      database: databaseEnv,
+      latencyMs: Date.now() - startedAt,
+      checks: {
+        env: "ok",
+        connection: "ok",
+        schema: schemaOk ? "ok" : "missing-tables",
+        productIdOne: productOne ? "ok" : "missing"
+      },
+      details: {
+        databaseName: ping[0]?.database_name || null,
+        schemaName: ping[0]?.schema_name || null,
+        postgresVersion: ping[0]?.postgres_version || null,
+        existingTables,
+        missingTables,
+        productIdOne: productOne
+      }
+    };
+  } catch (err) {
+    console.error("Database diagnostics failed:", err);
+
+    return {
+      ok: false,
+      area: "database",
+      database: databaseEnv,
+      latencyMs: Date.now() - startedAt,
+      checks: {
+        env: "ok",
+        connection: "failed",
+        schema: "skipped"
+      },
+      error: formatDbError(err)
+    };
+  }
+}
+
+app.get("/api/diagnostics/runtime", (req, res) => {
+  return res.json(getRuntimeDiagnostics(req));
+});
+
+app.get("/api/diagnostics/database", async (req, res) => {
+  const diagnostics = await runDatabaseDiagnostics();
+  return res.status(diagnostics.ok ? 200 : 503).json(diagnostics);
+});
+
+app.get("/api/diagnostics", async (req, res) => {
+  const runtime = getRuntimeDiagnostics(req);
+  const database = await runDatabaseDiagnostics();
+  const ok = runtime.ok && database.ok;
+  const likelyIssue = !runtime.env.database.configured
+    ? "vercel-env"
+    : database.area === "database"
+      ? "supabase-or-database-schema"
+      : ok
+        ? "none"
+        : "unknown";
+
+  return res.status(ok ? 200 : 503).json({
+    ok,
+    likelyIssue,
+    runtime,
+    database
+  });
+});
+
 /* --------------------------------------------------
    Mail Transporter (Zoho SMTP)
 -------------------------------------------------- */
@@ -111,9 +314,17 @@ function logMailError(context, err) {
   console.error(`${context}:`, err);
 }
 
-const transporter = nodemailer.createTransport({
-  ...getSmtpConfig()
-});
+let transporter;
+
+function getTransporter() {
+  if (!transporter) {
+    transporter = nodemailer.createTransport({
+      ...getSmtpConfig()
+    });
+  }
+
+  return transporter;
+}
 
 function fromAddress() {
   return `"${getRequiredEnv("SMTP_FROM_NAME")}" <${getRequiredEnv("SMTP_FROM_EMAIL")}>`;
@@ -354,7 +565,7 @@ app.post("/api/waitlist", waitlistLimiter, async (req, res) => {
 
     const link = `${process.env.BASE_URL}/verify-email?token=${rawToken}`;
 
-    await transporter.sendMail({
+    await getTransporter().sendMail({
       from: fromAddress(),
       to: email,
       subject: "Verify your email for RecordEasy",
@@ -463,6 +674,26 @@ app.get("/verify-email", async (req, res) => {
     );
 
   }
+});
+
+/* --------------------------------------------------
+   Global Error Handler
+-------------------------------------------------- */
+app.use((err, req, res, next) => {
+  console.error("Unhandled Error:", {
+    message: err.message,
+    code: err.code,
+    stack: err.stack,
+    url: req.url,
+    method: req.method
+  });
+
+  res.status(500).json({
+    success: false,
+    error: process.env.NODE_ENV === "production"
+      ? "Something went wrong. Please try again later."
+      : err.message
+  });
 });
 
 /* --------------------------------------------------
