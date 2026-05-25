@@ -330,6 +330,10 @@ function fromAddress() {
   return `"${getRequiredEnv("SMTP_FROM_NAME")}" <${getRequiredEnv("SMTP_FROM_EMAIL")}>`;
 }
 
+function getBaseUrl() {
+  return getRequiredEnv("BASE_URL").replace(/\/+$/, "");
+}
+
 /* --------------------------------------------------
    Helpers
 -------------------------------------------------- */
@@ -563,7 +567,7 @@ app.post("/api/waitlist", waitlistLimiter, async (req, res) => {
       }
     });
 
-    const link = `${process.env.BASE_URL}/verify-email?token=${rawToken}`;
+    const link = `${getBaseUrl()}/api/verify-email?token=${rawToken}`;
 
     await getTransporter().sendMail({
       from: fromAddress(),
@@ -587,7 +591,7 @@ app.post("/api/waitlist", waitlistLimiter, async (req, res) => {
 /* --------------------------------------------------
    PUBLIC: Verify Email → Add to Waitlist
 -------------------------------------------------- */
-app.get("/verify-email", async (req, res) => {
+async function verifyEmailHandler(req, res) {
   try {
     const { token } = req.query;
     if (!token) {
@@ -666,7 +670,7 @@ app.get("/verify-email", async (req, res) => {
       });
     });
 
-    return res.redirect("/verified.html");
+    return res.sendFile(path.join(__dirname, "../frontend/verified.html"));
   } catch (err) {
     console.error("Verify email failed:", err);
     return res.status(400).sendFile(
@@ -674,7 +678,10 @@ app.get("/verify-email", async (req, res) => {
     );
 
   }
-});
+}
+
+app.get("/api/verify-email", verifyEmailHandler);
+app.get("/verify-email", verifyEmailHandler);
 
 /* --------------------------------------------------
    Global Error Handler

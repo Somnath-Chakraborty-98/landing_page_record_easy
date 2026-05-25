@@ -1,4 +1,10 @@
 {
   "version": 2,
-  "framework": null
-} 
+  "framework": null,
+  "rewrites": [
+    {
+      "source": "/verify-email",
+      "destination": "/api/verify-email"
+    }
+  ]
+}
