@@ -176,7 +176,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     async function verifyDonationPayment(response) {
-        const res = await fetch(apiUrl("/api/donations/verify"), {
+        const res = await fetch(apiUrl("/api/verify-payment"), {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
@@ -198,23 +198,27 @@ document.addEventListener("DOMContentLoaded", () => {
             setDonationMessage("Opening Razorpay checkout...");
 
             try {
-                const res = await fetch(apiUrl("/api/donations/order"), {
+                const res = await fetch(apiUrl("/api/create-order"), {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json"
                     },
-                    body: JSON.stringify({ amount: selectedDonationAmount })
+                    body: JSON.stringify({
+                        amount: Math.round(selectedDonationAmount * 100),
+                        currency: "INR",
+                        receipt: `donation_${Date.now()}`
+                    })
                 });
 
                 const order = await parseJsonResponse(res, "Unable to create payment order.");
 
                 const checkout = new window.Razorpay({
-                    key: order.keyId,
+                    key: order.key_id,
                     amount: order.amount,
                     currency: order.currency,
-                    name: order.name,
-                    description: order.description,
-                    order_id: order.orderId,
+                    name: "RecordEasy",
+                    description: "Support RecordEasy development",
+                    order_id: order.order_id,
                     handler: async (response) => {
                         try {
                             const result = await verifyDonationPayment(response);
@@ -232,6 +236,11 @@ document.addEventListener("DOMContentLoaded", () => {
                             setDonationMessage("Payment cancelled.");
                         }
                     }
+                });
+
+                checkout.on("payment.failed", (response) => {
+                    const message = response?.error?.description || "Payment failed. Please try again.";
+                    setDonationMessage(message, "red");
                 });
 
                 checkout.open();

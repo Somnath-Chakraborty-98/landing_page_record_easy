@@ -3,10 +3,10 @@ import cors from "cors";
 import dotenv from "dotenv";
 import nodemailer from "nodemailer";
 import crypto from "crypto";
-import https from "https";
 import path from "path";
 import { fileURLToPath } from "url";
 import rateLimit from "express-rate-limit";
+import Razorpay from "razorpay";
 import prisma from "./lib/prisma.js";
 
 dotenv.config();
@@ -28,15 +28,14 @@ const __dirname = path.dirname(__filename);
 /* --------------------------------------------------
    Global Middleware
 -------------------------------------------------- */
-app.use(cors());
+const isProduction = process.env.NODE_ENV === "production";
 
-/*
-app.use(cors({
-  origin: ["https://recordeasy.com"],
-  methods: ["GET", "POST"]
-}));
+// Same-origin deployment (frontend + backend together) does not need CORS in production.
+// Keep CORS open only for local development convenience.
+if (!isProduction) {
+  app.use(cors());
+}
 
-*/
 app.use(express.json());
 
 // ✅ ALWAYS use absolute path for static files
@@ -365,51 +364,23 @@ function getRazorpayCredentials() {
   return { keyId, keySecret };
 }
 
-function createRazorpayOrder(payload) {
-  return new Promise((resolve, reject) => {
+let razorpayClient;
+
+function getRazorpayClient() {
+  if (!razorpayClient) {
     const { keyId, keySecret } = getRazorpayCredentials();
-    const requestBody = JSON.stringify(payload);
-    const auth = Buffer.from(`${keyId}:${keySecret}`).toString("base64");
-
-    const options = {
-      hostname: "api.razorpay.com",
-      path: "/v1/orders",
-      method: "POST",
-      headers: {
-        Authorization: `Basic ${auth}`,
-        "Content-Type": "application/json",
-        "Content-Length": Buffer.byteLength(requestBody)
-      }
-    };
-
-    const razorpayReq = https.request(options, (razorpayRes) => {
-      let responseBody = "";
-
-      razorpayRes.on("data", (chunk) => {
-        responseBody += chunk;
-      });
-
-      razorpayRes.on("end", () => {
-        let data = {};
-
-        try {
-          data = responseBody ? JSON.parse(responseBody) : {};
-        } catch {
-          return reject(new Error("Invalid response from Razorpay"));
-        }
-
-        if (razorpayRes.statusCode < 200 || razorpayRes.statusCode >= 300) {
-          return reject(new Error(data.error?.description || "Razorpay order creation failed"));
-        }
-
-        return resolve(data);
-      });
+    razorpayClient = new Razorpay({
+      key_id: keyId,
+      key_secret: keySecret
     });
+  }
 
-    razorpayReq.on("error", reject);
-    razorpayReq.write(requestBody);
-    razorpayReq.end();
-  });
+  return razorpayClient;
+}
+
+async function createRazorpayOrder(payload) {
+  const client = getRazorpayClient();
+  return client.orders.create(payload);
 }
 
 function isValidRazorpaySignature(orderId, paymentId, signature) {
@@ -439,6 +410,47 @@ const donationLimiter = rateLimit({
   legacyHeaders: false,
   message: {
     error: "Too many donation attempts. Please try again after 15 minutes."
+  }
+});
+
+app.post("/api/create-order", donationLimiter, async (req, res) => {
+  try {
+    const { keyId } = getRazorpayCredentials();
+    const amount = Number(req.body?.amount);
+    const currency = String(req.body?.currency || "INR").toUpperCase();
+    const receipt = req.body?.receipt
+      ? String(req.body.receipt)
+      : `ord_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`;
+
+    if (!Number.isFinite(amount) || amount < 100) {
+      return res.status(400).json({ error: "Amount must be at least 100 paise" });
+    }
+
+    const order = await createRazorpayOrder({
+      amount: Math.round(amount),
+      currency,
+      receipt
+    });
+
+    return res.json({
+      key_id: keyId,
+      order_id: order.id,
+      amount: order.amount,
+      currency: order.currency
+    });
+  } catch (err) {
+    console.error("Create order error:", err);
+
+    if (err?.statusCode === 401) {
+      return res.status(401).json({ error: "Razorpay authentication failed" });
+    }
+
+    const status = err.message.includes("credentials") ? 503 : 500;
+    return res.status(status).json({
+      error: status === 503
+        ? "Razorpay is not configured yet."
+        : "Unable to create Razorpay order."
+    });
   }
 });
 
@@ -485,6 +497,34 @@ app.post("/api/donations/order", donationLimiter, async (req, res) => {
       error: status === 503
         ? "Razorpay is not configured yet."
         : "Unable to start Razorpay checkout. Please try again later."
+    });
+  }
+});
+
+app.post("/api/verify-payment", donationLimiter, async (req, res) => {
+  try {
+    const {
+      razorpay_order_id: orderId,
+      razorpay_payment_id: paymentId,
+      razorpay_signature: signature
+    } = req.body || {};
+
+    if (!orderId || !paymentId || !signature) {
+      return res.status(400).json({ error: "Missing payment verification details" });
+    }
+
+    if (!isValidRazorpaySignature(orderId, paymentId, signature)) {
+      return res.status(400).json({ error: "Invalid payment signature" });
+    }
+
+    return res.json({
+      success: true,
+      message: "Payment verified successfully."
+    });
+  } catch (err) {
+    console.error("Verify payment error:", err);
+    return res.status(500).json({
+      error: "Unable to verify payment."
     });
   }
 });
