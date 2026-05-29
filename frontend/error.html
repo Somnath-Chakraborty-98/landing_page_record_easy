@@ -2,27 +2,40 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Something went wrong</title>
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Verification Failed – RecordEasy</title>
   <meta name="robots" content="noindex,nofollow" />
-
-  <link rel="stylesheet" href="css/error.css" />
+  <link rel="stylesheet" href="/css/styles.css" />
+  <link rel="stylesheet" href="/css/status.css" />
 </head>
+<body class="status-page">
 
-<body>
-  <main class="card" role="main">
-    <div class="icon">⚠️</div>
-    <h1>Something went wrong</h1>
-    <p class="primary">
-      We couldn’t verify your email. The link may have expired or already been used.
-    </p>
-    <p class="note">
-      Please contact us at
-      <a href="mailto:support@yourdomain.com">
-        support@yourdomain.com
-      </a>
-    </p>
+  <header class="navbar">
+    <a href="/" class="logo">RecordEasy</a>
+  </header>
+
+  <main class="status-main" role="main">
+    <div class="status-card status-card--error">
+      <div class="status-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M12 8v4M12 16h.01"/>
+        </svg>
+      </div>
+      <h1>Link expired or invalid</h1>
+      <p class="primary">
+        We couldn't verify your email. The link may have expired or already been used.
+      </p>
+      <p class="note">
+        Join again from the homepage, or contact
+        <a href="mailto:support@yourdomain.com">support@metrivance.com</a>.
+      </p>
+      <div class="status-actions">
+        <a href="/#waitlist" class="btn primary">Join waitlist again</a>
+        <a href="/" class="btn secondary">Back to RecordEasy</a>
+      </div>
+    </div>
   </main>
+
 </body>
 </html>

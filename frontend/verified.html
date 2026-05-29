@@ -2,25 +2,37 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Email Verified</title>
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Email Verified – RecordEasy</title>
   <meta name="robots" content="noindex,nofollow" />
-
-  <link rel="stylesheet" href="css/verified.css" />
+  <link rel="stylesheet" href="/css/styles.css" />
+  <link rel="stylesheet" href="/css/status.css" />
 </head>
+<body class="status-page">
 
-<body>
-  <main class="card" role="main">
-    <div class="icon">✅</div>
-    <h1>Email verified</h1>
-    <p class="primary">
-      Your email address has been successfully verified and you’ve been added
-      to the waitlist.
-    </p>
-    <p class="note">
-      You can safely close this tab. We’ll notify you when access is available.
-    </p>
+  <header class="navbar">
+    <a href="/" class="logo">RecordEasy</a>
+  </header>
+
+  <main class="status-main" role="main">
+    <div class="status-card status-card--success">
+      <div class="status-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 6 9 17l-5-5"/>
+        </svg>
+      </div>
+      <h1>You're on the waitlist</h1>
+      <p class="primary">
+        Your email is verified. We'll notify you when RecordEasy is ready for you.
+      </p>
+      <p class="note">
+        You can close this tab. No further action needed.
+      </p>
+      <div class="status-actions">
+        <a href="/" class="btn primary">Back to RecordEasy</a>
+      </div>
+    </div>
   </main>
+
 </body>
 </html>
