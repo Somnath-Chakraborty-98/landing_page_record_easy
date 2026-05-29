@@ -23,9 +23,11 @@
   max-width: 440px;
   width: 100%;
   padding: 40px 36px;
-  border-radius: 12px;
+  border-radius: 16px;
   border: 1px solid #e5e7eb;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+  box-shadow:
+    0 4px 6px rgba(0, 0, 0, 0.04),
+    0 12px 32px rgba(0, 0, 0, 0.1);
   text-align: center;
 }
 
@@ -62,27 +64,29 @@
   color: #111;
 }
 
-.status-card .primary {
+.status-card .status-lead {
   font-size: 16px;
   line-height: 1.6;
   color: #4b5563;
   margin: 0 0 12px;
+  background: transparent;
 }
 
-.status-card .note {
+.status-card .status-note {
   font-size: 14px;
   line-height: 1.5;
   color: #6b7280;
   margin: 0 0 28px;
+  background: transparent;
 }
 
-.status-card .note a {
+.status-card .status-note a {
   color: #4f46e5;
   text-decoration: none;
   font-weight: 500;
 }
 
-.status-card .note a:hover {
+.status-card .status-note a:hover {
   text-decoration: underline;
 }
 

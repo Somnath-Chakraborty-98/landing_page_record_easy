@@ -49,12 +49,12 @@ a {
   flex: 0 0 auto;
 }
 
-.primary {
+.btn.primary {
   background: #4f46e5;
   color: #fff;
 }
 
-.primary:hover {
+.btn.primary:hover {
   background: #4338ca;
 }
 
