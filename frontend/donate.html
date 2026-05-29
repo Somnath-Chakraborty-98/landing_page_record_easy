@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Support RecordEasy – Donate</title>
+  <link rel="stylesheet" href="/css/donate.css" />
+</head>
+<body class="donate-page">
+
+  <div class="donate-shell">
+    <aside class="donate-brand" aria-label="Payment summary">
+      <a href="/" class="donate-brand-logo">RecordEasy</a>
+      <p class="donate-brand-tagline">Support transparent recording</p>
+
+      <div class="donate-summary">
+        <span class="donate-summary-label">You pay</span>
+        <p class="donate-amount-display" id="amountDisplay" aria-live="polite">₹99</p>
+      </div>
+
+      <p class="donate-secured">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M12 3 5 6v6c0 5 3.5 9.7 7 10 3.5-.3 7-5 7-10V6l-7-3Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+        </svg>
+        Secured by Razorpay
+      </p>
+    </aside>
+
+    <main class="donate-main">
+      <a href="/" class="donate-back">← Back to home</a>
+
+      <h1>Choose contribution</h1>
+      <p class="donate-sub">
+        Slide to set your support amount, then continue to Razorpay checkout.
+      </p>
+
+      <div class="donate-slider-block">
+        <div class="donate-slider-labels">
+          <span id="minLabel">₹99</span>
+          <span id="maxLabel">₹1,00,000</span>
+        </div>
+        <input
+          type="range"
+          id="amountSlider"
+          class="donate-slider"
+          min="99"
+          max="100000"
+          step="1"
+          value="99"
+          aria-valuemin="99"
+          aria-valuemax="100000"
+          aria-valuenow="99"
+          aria-label="Donation amount in rupees"
+        />
+        <p class="donate-slider-hint">Drag the slider to adjust amount</p>
+      </div>
+
+      <p id="donateMessage" class="donate-message" role="status"></p>
+
+      <button type="button" class="donate-pay-btn" id="payBtn">
+        Pay <span id="payBtnAmount">₹99</span>
+      </button>
+    </main>
+  </div>
+
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <script src="/js/config.js"></script>
+  <script src="/js/donate.js" defer></script>
+</body>
+</html>

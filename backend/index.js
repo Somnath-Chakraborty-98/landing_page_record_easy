@@ -348,8 +348,8 @@ function generateEmailToken() {
 
 function getDonationAmountLimits() {
   return {
-    min: Number(process.env.DONATION_MIN_AMOUNT_INR || 50),
-    max: Number(process.env.DONATION_MAX_AMOUNT_INR || 50000)
+    min: Number(process.env.DONATION_MIN_AMOUNT_INR || 99),
+    max: Number(process.env.DONATION_MAX_AMOUNT_INR || 100000)
   };
 }
 
@@ -422,21 +422,15 @@ app.post("/api/create-order", donationLimiter, async (req, res) => {
   try {
     const { keyId } = getRazorpayCredentials();
     const { min, max } = getDonationAmountLimits();
-    const amount = Number(req.body?.amount);
-    const currency = String(req.body?.currency || "INR").toUpperCase();
-    const receipt = req.body?.receipt
-      ? String(req.body.receipt)
-      : `ord_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`;
+    const amountInPaise = Number(req.body?.amount);
+    const currency = "INR";
+    const receipt = `donation_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`;
 
-    if (!Number.isFinite(amount)) {
-      return res.status(400).json({ error: "Amount is required" });
+    if (!Number.isFinite(amountInPaise) || amountInPaise < 100) {
+      return res.status(400).json({ error: "Amount is required (minimum 100 paise)" });
     }
 
-    const amountInRupees = amount / 100;
-
-    if (amount < 100) {
-      return res.status(400).json({ error: "Amount must be at least 100 paise" });
-    }
+    const amountInRupees = amountInPaise / 100;
 
     if (amountInRupees < min || amountInRupees > max) {
       return res.status(400).json({
@@ -445,7 +439,7 @@ app.post("/api/create-order", donationLimiter, async (req, res) => {
     }
 
     const order = await createRazorpayOrder({
-      amount: Math.round(amount),
+      amount: Math.round(amountInPaise),
       currency,
       receipt
     });
