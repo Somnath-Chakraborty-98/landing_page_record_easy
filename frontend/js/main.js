@@ -165,8 +165,51 @@ document.addEventListener("DOMContentLoaded", () => {
     // ====================================================
 
     const donateBtn = document.getElementById("donateBtn");
+    const donationAmountInput = document.getElementById("donationAmountInput");
     const donationMessage = document.getElementById("donationMessage");
-    let selectedDonationAmount = 99;
+    let donationMinInr = 50;
+    let donationMaxInr = 50000;
+
+    async function loadDonationLimits() {
+        try {
+            const res = await fetch(apiUrl("/api/donation-limits"));
+            const data = await parseJsonResponse(res, "Unable to load donation limits.");
+            donationMinInr = Number(data.min);
+            donationMaxInr = Number(data.max);
+
+            if (donationAmountInput) {
+                donationAmountInput.min = String(donationMinInr);
+                donationAmountInput.max = String(donationMaxInr);
+
+                const current = Number(donationAmountInput.value);
+                if (!Number.isFinite(current) || current < donationMinInr) {
+                    donationAmountInput.value = String(donationMinInr);
+                } else if (current > donationMaxInr) {
+                    donationAmountInput.value = String(donationMaxInr);
+                }
+            }
+        } catch (err) {
+            console.warn("Donation limits fallback:", err);
+        }
+    }
+
+    function getSelectedDonationAmount() {
+        const amount = Number(donationAmountInput?.value);
+
+        if (!Number.isFinite(amount)) {
+            throw new Error("Please enter a valid donation amount.");
+        }
+
+        if (amount < donationMinInr || amount > donationMaxInr) {
+            throw new Error(
+                `Donation amount must be between INR ${donationMinInr} and INR ${donationMaxInr}.`
+            );
+        }
+
+        return Math.round(amount);
+    }
+
+    loadDonationLimits();
 
     function setDonationMessage(message, color = "#666") {
         if (!donationMessage) return;
@@ -198,13 +241,15 @@ document.addEventListener("DOMContentLoaded", () => {
             setDonationMessage("Opening Razorpay checkout...");
 
             try {
+                const amountInRupees = getSelectedDonationAmount();
+
                 const res = await fetch(apiUrl("/api/create-order"), {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json"
                     },
                     body: JSON.stringify({
-                        amount: Math.round(selectedDonationAmount * 100),
+                        amount: amountInRupees * 100,
                         currency: "INR",
                         receipt: `donation_${Date.now()}`
                     })

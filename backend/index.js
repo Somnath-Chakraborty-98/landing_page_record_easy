@@ -413,17 +413,35 @@ const donationLimiter = rateLimit({
   }
 });
 
+app.get("/api/donation-limits", (req, res) => {
+  const { min, max } = getDonationAmountLimits();
+  return res.json({ min, max, currency: "INR" });
+});
+
 app.post("/api/create-order", donationLimiter, async (req, res) => {
   try {
     const { keyId } = getRazorpayCredentials();
+    const { min, max } = getDonationAmountLimits();
     const amount = Number(req.body?.amount);
     const currency = String(req.body?.currency || "INR").toUpperCase();
     const receipt = req.body?.receipt
       ? String(req.body.receipt)
       : `ord_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`;
 
-    if (!Number.isFinite(amount) || amount < 100) {
+    if (!Number.isFinite(amount)) {
+      return res.status(400).json({ error: "Amount is required" });
+    }
+
+    const amountInRupees = amount / 100;
+
+    if (amount < 100) {
       return res.status(400).json({ error: "Amount must be at least 100 paise" });
+    }
+
+    if (amountInRupees < min || amountInRupees > max) {
+      return res.status(400).json({
+        error: `Donation amount must be between INR ${min} and INR ${max}`
+      });
     }
 
     const order = await createRazorpayOrder({

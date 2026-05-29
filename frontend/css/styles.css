@@ -349,6 +349,36 @@ a {
   display: flex;
   flex-direction: column;
   align-items: center;
+  gap: 12px;
+  width: 100%;
+  max-width: 280px;
+  margin: 0 auto;
+}
+
+.donation-amount-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  align-self: flex-start;
+}
+
+.donation-amount-input {
+  width: 100%;
+  height: 44px;
+  padding: 10px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 16px;
+  font-family: inherit;
+  box-sizing: border-box;
+  background: #fff;
+  color: #111;
+}
+
+.donation-amount-input:focus {
+  outline: none;
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
 }
 
 .donate-btn {
