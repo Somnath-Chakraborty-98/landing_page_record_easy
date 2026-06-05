@@ -333,6 +333,62 @@ function getBaseUrl() {
   return getRequiredEnv("BASE_URL").replace(/\/+$/, "");
 }
 
+function buildVerificationEmailContent(verifyLink) {
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Verify your email</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f9fafb;font-family:Inter,Arial,Helvetica,sans-serif;color:#111827;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color:#f9fafb;padding:40px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:520px;background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;">
+          <tr>
+            <td style="padding:28px 32px 8px;font-size:20px;font-weight:600;color:#111827;">
+              RecordEasy
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:8px 32px 0;font-size:22px;font-weight:600;line-height:1.3;color:#111827;">
+              Verify your email
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:16px 32px 0;font-size:16px;line-height:1.6;color:#4b5563;">
+              Thanks for joining the RecordEasy waitlist. Confirm your email to secure your spot.
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:28px 32px;">
+              <a href="${verifyLink}"
+                 style="display:inline-block;background:#4f46e5;color:#ffffff;text-decoration:none;font-size:16px;font-weight:600;padding:14px 28px;border-radius:6px;">
+                Verify your email
+              </a>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:0 32px 28px;font-size:13px;line-height:1.5;color:#6b7280;">
+              This link expires in 24 hours. If you didn't request this, you can ignore this email.
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+  const text =
+    "Verify your email for RecordEasy\n\n" +
+    "Open this email in HTML view and tap the \"Verify your email\" button to confirm your waitlist signup.\n\n" +
+    "This link expires in 24 hours.";
+
+  return { html, text };
+}
+
 /* --------------------------------------------------
    Helpers
 -------------------------------------------------- */
@@ -619,13 +675,15 @@ app.post("/api/waitlist", waitlistLimiter, async (req, res) => {
       }
     });
 
-    const link = `${getBaseUrl()}/api/verify-email?token=${rawToken}`;
+    const verifyLink = `${getBaseUrl()}/api/verify-email?token=${rawToken}`;
+    const { html, text } = buildVerificationEmailContent(verifyLink);
 
     await getTransporter().sendMail({
       from: fromAddress(),
       to: email,
       subject: "Verify your email for RecordEasy",
-      text: `Click the link to verify your email:\n\n${link}`
+      text,
+      html
     });
 
     return res.json({
